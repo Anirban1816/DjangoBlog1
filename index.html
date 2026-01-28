@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Django Blog - Full Functional Blog Application</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .slide-in { animation: slideIn 0.3s ease-out; }
+        @keyframes slideIn { from { transform: translateX(-20px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        .card-hover:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(0,0,0,0.15); }
+        .btn-primary { @apply bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200; }
+        .btn-secondary { @apply bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded-lg transition-all duration-200; }
+        .btn-danger { @apply bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200; }
+        .input-field { @apply w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent; }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Navigation Bar -->
+    <nav class="bg-gradient-to-r from-emerald-700 to-teal-600 text-white shadow-lg sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-4">
+            <div class="flex justify-between items-center h-16">
+                <a href="#" onclick="showPage('home')" class="flex items-center space-x-2 font-bold text-xl hover:opacity-90 transition">
+                    <i class="fas fa-blog"></i>
+                    <span>DjangoBlog</span>
+                </a>
+                <div class="flex items-center space-x-4">
+                    <a href="#" onclick="showPage('home')" class="hover:text-emerald-200 transition flex items-center gap-1">
+                        <i class="fas fa-home"></i> Home
+                    </a>
+                    <div id="authNav" class="flex items-center space-x-4">
+                        <!-- Dynamic auth buttons -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Flash Messages -->
+    <div id="flashMessage" class="fixed top-20 right-4 z-50 hidden">
+        <div class="bg-emerald-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 fade-in">
+            <i class="fas fa-check-circle"></i>
+            <span id="flashText"></span>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="max-w-6xl mx-auto px-4 py-8">
+        <!-- Home Page -->
+        <div id="homePage" class="page">
+            <div class="flex justify-between items-center mb-8">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-800">Latest Blog Posts</h1>
+                    <p class="text-gray-600 mt-1">Discover stories and insights from our community</p>
+                </div>
+                <button onclick="showPage('createPost')" id="newPostBtn" class="btn-primary hidden flex items-center gap-2">
+                    <i class="fas fa-plus-circle"></i> New Post
+                </button>
+            </div>
+            <div id="postsContainer" class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                <!-- Blog posts will be rendered here -->
+            </div>
+            <div id="noPostsMessage" class="text-center py-16 hidden">
+                <i class="fas fa-pen-nib text-6xl text-gray-300 mb-4"></i>
+                <h3 class="text-xl font-semibold text-gray-600">No blog posts yet</h3>
+                <p class="text-gray-500 mt-2">Be the first to create a post!</p>
+            </div>
+        </div>
+
+        <!-- Post Details Page -->
+        <div id="postDetailPage" class="page hidden">
+            <button onclick="showPage('home')" class="btn-secondary mb-6 flex items-center gap-2">
+                <i class="fas fa-arrow-left"></i> Back to Posts
+            </button>
+            <article id="postDetailContent" class="bg-white rounded-xl shadow-lg p-8 fade-in">
+                <!-- Post details will be rendered here -->
+            </article>
+        </div>
+
+        <!-- Login Page -->
+        <div id="loginPage" class="page hidden">
+            <div class="max-w-md mx-auto bg-white rounded-xl shadow-lg p-8 fade-in">
+                <div class="text-center mb-6">
+                    <i class="fas fa-user-circle text-5xl text-emerald-600 mb-3"></i>
+                    <h2 class="text-2xl font-bold text-gray-800">Welcome Back</h2>
+                    <p class="text-gray-600">Login to your account</p>
+                </div>
+                <form onsubmit="handleLogin(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-1">Username</label>
+                        <input type="text" id="loginUsername" class="input-field" placeholder="Enter your username" required>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-1">Password</label>
+                        <input type="password" id="loginPassword" class="input-field" placeholder="Enter your password" required>
+                    </div>
+                    <button type="submit" class="btn-primary w-full flex items-center justify-center gap-2">
+                        <i class="fas fa-sign-in-alt"></i> Login
+                    </button>
+                </form>
+                <p class="text-center mt-4 text-gray-600">
+                    Don't have an account? 
+                    <a href="#" onclick="showPage('register')" class="text-emerald-600 hover:underline font-medium">Sign up</a>
+                </p>
+            </div>
+        </div>
+
+        <!-- Register Page -->
+        <div id="registerPage" class="page hidden">
+            <div class="max-w-md mx-auto bg-white rounded-xl shadow-lg p-8 fade-in">
+                <div class="text-center mb-6">
+                    <i class="fas fa-user-plus text-5xl text-emerald-600 mb-3"></i>
+                    <h2 class="text-2xl font-bold text-gray-800">Create Account</h2>
+                    <p class="text-gray-600">Join our blogging community</p>
+                </div>
+                <form onsubmit="handleRegister(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-1">Username</label>
+                        <input type="text" id="registerUsername" class="input-field" placeholder="Choose a username" required>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-1">Email</label>
+                        <input type="email" id="registerEmail" class="input-field" placeholder="Enter your email" required>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-1">Password</label>
+                        <input type="password" id="registerPassword" class="input-field" placeholder="Create a password" required>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-1">Confirm Password</label>
+                        <input type="password" id="registerConfirm" class="input-field" placeholder="Confirm your password" required>
+                    </div>
+                    <button type="submit" class="btn-primary w-full flex items-center justify-center gap-2">
+                        <i class="fas fa-user-plus"></i> Sign Up
+                    </button>
+                </form>
+                <p class="text-center mt-4 text-gray-600">
+                    Already have an account? 
+                    <a href="#" onclick="showPage('login')" class="text-emerald-600 hover:underline font-medium">Login</a>
+                </p>
+            </div>
+        </div>
+
+        <!-- Create/Edit Post Page -->
+        <div id="createPostPage" class="page hidden">
+            <div class="max-w-3xl mx-auto bg-white rounded-xl shadow-lg p-8 fade-in">
+                <h2 id="postFormTitle" class="text-2xl font-bold text-gray-800 mb-6">
+                    <i class="fas fa-pen-square text-emerald-600 mr-2"></i>
+                    Create New Post
+                </h2>
+                <form onsubmit="handlePostSubmit(event)" class="space-y-6">
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-1">Title</label>
+                        <input type="text" id="postTitle" class="input-field text-lg" placeholder="Enter your post title" required>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-1">Content</label>
+                        <textarea id="postContent" rows="10" class="input-field resize-none" placeholder="Write your amazing story..." required></textarea>
+                        <p class="text-sm text-gray-500 mt-1">Markdown is supported for formatting</p>
+                    </div>
+                    <input type="hidden" id="editPostId">
+                    <div class="flex gap-4">
+                        <button type="submit" class="btn-primary flex items-center gap-2">
+                            <i class="fas fa-save"></i> Publish
+                        </button>
+                        <button type="button" onclick="showPage('home')" class="btn-secondary flex items-center gap-2">
+                            <i class="fas fa-times"></i> Cancel
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-xl p-8 max-w-md mx-4 fade-in">
+            <div class="text-center">
+                <i class="fas fa-exclamation-triangle text-5xl text-red-500 mb-4"></i>
+                <h3 class="text-xl font-bold text-gray-800 mb-2">Confirm Delete</h3>
+                <p class="text-gray-600 mb-6">Are you sure you want to delete this post? This action cannot be undone.</p>
+                <div class="flex gap-4 justify-center">
+                    <button onclick="closeDeleteModal()" class="btn-secondary flex items-center gap-2">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                    <button onclick="confirmDelete()" class="btn-danger flex items-center gap-2">
+                        <i class="fas fa-trash"></i> Delete
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-gray-400 py-8 mt-12">
+        <div class="max-w-6xl mx-auto px-4 text-center">
+            <p class="flex items-center justify-center gap-2">
+                <i class="fas fa-code"></i> Built with Django Framework Simulation
+            </p>
+            <p class="mt-2 text-sm">Full Functional Blog Project - CRUD Operations & User Authentication</p>
+        </div>
+    </footer>
+
+    <script>
+        // ============================================
+        // DATA STORE (Simulating Django Database)
+        // ============================================
+        const initialUsers = [
+            { id: 1, username: 'admin', email: 'admin@blog.com', password: 'admin123', createdAt: new Date().toISOString() },
+            { id: 2, username: 'john_doe', email: 'john@example.com', password: 'john123', createdAt: new Date().toISOString() }
+        ];
+
+        const initialPosts = [
+            {
+                id: 1,
+                title: 'Getting Started with Django',
+                content: 'Django is a high-level Python web framework that encourages rapid development and clean, pragmatic design. It takes care of much of the hassle of web development, so you can focus on writing your app without needing to reinvent the wheel.\n\n**Key Features:**\n- Built-in admin interface\n- Robust ORM for database operations\n- URL routing and template engine\n- Security features out of the box\n\nStart your Django journey today!',
+                authorId: 1,
+                authorName: 'admin',
+                createdAt: new Date(Date.now() - 86400000 * 2).toISOString(),
+                updatedAt: new Date(Date.now() - 86400000 * 2).toISOString()
+            },
+            {
+                id: 2,
+                title: 'Understanding Django Models',
+                content: 'Models in Django are a single, definitive source of truth about your data. They contain the essential fields and behaviors of the data you\'re storing.\n\nDjango follows the DRY (Don\'t Repeat Yourself) principle, so models are defined once and can be used throughout your project.\n\n```python\nfrom django.db import models\n\nclass Post(models.Model):\n    title = models.CharField(max_length=200)\n    content = models.TextField()\n    created_at = models.DateTimeField(auto_now_add=True)\n```',
+                authorId: 2,
+                authorName: 'john_doe',
+                createdAt: new Date(Date.now() - 86400000).toISOString(),
+                updatedAt: new Date(Date.now() - 86400000).toISOString()
+            },
+            {
+                id: 3,
+                title: 'Building REST APIs with Django REST Framework',
+                content: 'The Django REST Framework (DRF) is a powerful and flexible toolkit for building Web APIs. It makes the process of building APIs much easier compared to vanilla Django.\n\n**Why use DRF?**\n- Serialization of model data\n- Authentication and permissions\n- Browsable API\n- Excellent documentation\n\nIn this guide, we\'ll explore how to build a complete REST API for your blog application.',
+                authorId: 1,
+                authorName: 'admin',
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            }
+        ];
+
+        // Initialize data from localStorage or defaults
+        let users = JSON.parse(localStorage.getItem('blog_users')) || initialUsers;
+        let posts = JSON.parse(localStorage.getItem('blog_posts')) || initialPosts;
+        let currentUser = JSON.parse(localStorage.getItem('blog_current_user')) || null;
+        let deletePostId = null;
+
+        // Save functions
+        function saveData() {
+            localStorage.setItem('blog_users', JSON.stringify(users));
+            localStorage.setItem('blog_posts', JSON.stringify(posts));
+            localStorage.setItem('blog_current_user', JSON.stringify(currentUser));
+        }
+
+        // ============================================
+        // UTILITY FUNCTIONS
+        // ============================================
+        function showFlashMessage(message, type = 'success') {
+            const flashDiv = document.getElementById('flashMessage');
+            const flashText = document.getElementById('flashText');
+            flashText.textContent = message;
+            flashDiv.className = `fixed top-20 right-4 z-50 fade-in`;
+            flashDiv.classList.add(type === 'error' ? 'bg-red-500' : 'bg-emerald-500');
+            flashDiv.classList.remove('hidden');
+            flashDiv.style.display = 'flex';
+            
+            setTimeout(() => {
+                flashDiv.classList.add('hidden');
+                flashDiv.style.display = 'none';
+            }, 3000);
+        }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function formatRelativeTime(dateString) {
+            const date = new Date(dateString);
+            const now = new Date();
+            const diffMs = now - date;
+            const diffMins = Math.floor(diffMs / 60000);
+            const diffHours = Math.floor(diffMs / 3600000);
+            const diffDays = Math.floor(diffMs / 86400000);
+
+            if (diffMins < 1) return 'Just now';
+            if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
+            if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+            if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+            return formatDate(dateString);
+        }
+
+        function renderMarkdown(text) {
+            // Simple markdown rendering
+            let html = text
+                .replace(/### (.*)/g, '<h3 class="text-xl font-bold text-gray-800 mt-6 mb-3">$1</h3>')
+                .replace(/## (.*)/g, '<h2 class="text-2xl font-bold text-gray-800 mt-6 mb-3">$1</h2>')
+                .replace(/# (.*)/g, '<h1 class="text-3xl font-bold text-gray-800 mt-6 mb-4">$1</h1>')
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/```([\s\S]*?)```/g, '<pre class="bg-gray-800 text-green-400 p-4 rounded-lg overflow-x-auto my-4 text-sm"><code>$1</code></pre>')
+                .replace(/`([^`]+)`/g, '<code class="bg-gray-100 text-red-500 px-1 rounded">$1</code>')
+                .replace(/- (.*)/g, '<li class="ml-4 list-disc">$1</li>')
+                .replace(/\n\n/g, '</p><p class="mb-4">');
+            
+            return `<p class="mb-4 text-gray-700 leading-relaxed">${html}</p>`;
+        }
+
+        // ============================================
+        // PAGE NAVIGATION
+        // ============================================
+        function showPage(pageName) {
+            document.querySelectorAll('.page').forEach(page => page.classList.add('hidden'));
+            document.getElementById(pageName + 'Page')?.classList.remove('hidden');
+            document.getElementById(pageName + 'Page')?.classList.add('fade-in');
+            
+            // Refresh content based on page
+            switch(pageName) {
+                case 'home':
+                    renderPosts();
+                    break;
+                case 'postDetail':
+                    // Already handled by renderPostDetail
+                    break;
+                case 'login':
+                case 'register':
+                    updateAuthNav();
+                    break;
+            }
+        }
+
+        // ============================================
+        // AUTHENTICATION
+        // ============================================
+        function updateAuthNav() {
+            const authNav = document.getElementById('authNav');
+            const newPostBtn = document.getElementById('newPostBtn');
+            
+            if (currentUser) {
+                authNav.innerHTML = `
+                    <span class="flex items-center gap-2 bg-emerald-600 px-3 py-1 rounded-full text-sm">
+                        <i class="fas fa-user"></i> ${currentUser.username}
+                    </span>
+                    <button onclick="handleLogout()" class="hover:text-emerald-200 transition flex items-center gap-1">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </button>
+                `;
+                newPostBtn.classList.remove('hidden');
+            } else {
+                authNav.innerHTML = `
+                    <a href="#" onclick="showPage('login')" class="hover:text-emerald-200 transition flex items-center gap-1">
+                        <i class="fas fa-sign-in-alt"></i> Login
+                    </a>
+                    <a href="#" onclick="showPage('register')" class="bg-white text-emerald-600 px-4 py-1.5 rounded-lg hover:bg-emerald-50 transition font-medium flex items-center gap-1">
+                        <i class="fas fa-user-plus"></i> Sign Up
+                    </a>
+                `;
+                newPostBtn.classList.add('hidden');
+            }
+        }
+
+        function handleLogin(event) {
+            event.preventDefault();
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            
+            const user = users.find(u => u.username === username && u.password === password);
+            
+            if (user) {
+                currentUser = { id: user.id, username: user.username, email: user.email };
+                saveData();
+                showFlashMessage(`Welcome back, ${user.username}!`);
+                document.getElementById('loginUsername').value = '';
+                document.getElementById('loginPassword').value = '';
+                updateAuthNav();
+                showPage('home');
+            } else {
+                showFlashMessage('Invalid username or password', 'error');
+            }
+        }
+
+        function handleRegister(event) {
+            event.preventDefault();
+            const username = document.getElementById('registerUsername').value.trim();
+            const email = document.getElementById('registerEmail').value.trim();
+            const password = document.getElementById('registerPassword').value;
+            const confirm = document.getElementById('registerConfirm').value;
+            
+            if (password !== confirm) {
+                showFlashMessage('Passwords do not match', 'error');
+                return;
+            }
+            
+            if (users.some(u => u.username === username)) {
+                showFlashMessage('Username already exists', 'error');
+                return;
+            }
+            
+            if (users.some(u => u.email === email)) {
+                showFlashMessage('Email already registered', 'error');
+                return;
+            }
+            
+            const newUser = {
+                id: users.length + 1,
+                username,
+                email,
+                password,
+                createdAt: new Date().toISOString()
+            };
+            
+            users.push(newUser);
+            currentUser = { id: newUser.id, username: newUser.username, email: newUser.email };
+            saveData();
+            
+            showFlashMessage(`Account created successfully! Welcome, ${username}!`);
+            document.getElementById('registerUsername').value = '';
+            document.getElementById('registerEmail').value = '';
+            document.getElementById('registerPassword').value = '';
+            document.getElementById('registerConfirm').value = '';
+            
+            updateAuthNav();
+            showPage('home');
+        }
+
+        function handleLogout() {
+            currentUser = null;
+            saveData();
+            showFlashMessage('You have been logged out');
+            updateAuthNav();
+            showPage('home');
+        }
+
+        // ============================================
+        // BLOG POST CRUD
+        // ============================================
+        function renderPosts() {
+            const container = document.getElementById('postsContainer');
+            const noPostsMsg = document.getElementById('noPostsMessage');
+            
+            if (posts.length === 0) {
+                container.innerHTML = '';
+                noPostsMsg.classList.remove('hidden');
+                return;
+            }
+            
+            noPostsMsg.classList.add('hidden');
+            const sortedPosts = [...posts].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            
+            container.innerHTML = sortedPosts.map(post => `
+                <article class="bg-white rounded-xl shadow-md p-6 card-hover transition-all duration-300 cursor-pointer fade-in" onclick="viewPost(${post.id})">
+                    <div class="flex items-start justify-between mb-3">
+                        <span class="bg-emerald-100 text-emerald-700 text-xs px-2 py-1 rounded-full">
+                            <i class="fas fa-user mr-1"></i> ${post.authorName}
+                        </span>
+                        <span class="text-gray-400 text-sm">${formatRelativeTime(post.createdAt)}</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-2 hover:text-emerald-600 transition">${post.title}</h3>
+                    <p class="text-gray-600 line-clamp-3 mb-4">${post.content.substring(0, 150)}${post.content.length > 150 ? '...' : ''}</p>
+                    <div class="flex items-center justify-between">
+                        <span class="text-emerald-600 text-sm font-medium hover:underline">Read more →</span>
+                        ${currentUser && currentUser.id === post.authorId ? `
+                            <div class="flex gap-2" onclick="event.stopPropagation()">
+                                <button onclick="editPost(${post.id})" class="text-blue-500 hover:text-blue-700 p-1">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button onclick="deletePost(${post.id})" class="text-red-500 hover:text-red-700 p-1">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        ` : ''}
+                    </div>
+                </article>
+            `).join('');
+        }
+
+        function viewPost(postId) {
+            const post = posts.find(p => p.id === postId);
+            if (!post) return;
+            
+            const detailPage = document.getElementById('postDetailPage');
+            const detailContent = document.getElementById('postDetailContent');
+            
+            const canEdit = currentUser && currentUser.id === post.authorId;
+            
+            detailContent.innerHTML = `
+                <div class="border-b pb-4 mb-6">
+                    <h1 class="text-3xl font-bold text-gray-800 mb-3">${post.title}</h1>
+                    <div class="flex items-center justify-between text-gray-600">
+                        <div class="flex items-center gap-4">
+                            <span class="flex items-center gap-1">
+                                <i class="fas fa-user-circle"></i> ${post.authorName}
+                            </span>
+                            <span class="flex items-center gap-1">
+                                <i class="fas fa-calendar-alt"></i> ${formatDate(post.createdAt)}
+                            </span>
+                        </div>
+                        ${canEdit ? `
+                            <div class="flex gap-2" onclick="event.stopPropagation()">
+                                <button onclick="editPost(${post.id})" class="btn-secondary flex items-center gap-1 text-sm">
+                                    <i class="fas fa-edit"></i> Edit
+                                </button>
+                                <button onclick="deletePost(${post.id})" class="btn-danger flex items-center gap-1 text-sm">
+                                    <i class="fas fa-trash"></i> Delete
+                                </button>
+                            </div>
+                        ` : ''}
+                    </div>
+                    ${post.updatedAt !== post.createdAt ? `
+                        <p class="text-gray-400 text-sm mt-2">
+                            <i class="fas fa-edit"></i> Last updated: ${formatRelativeTime(post.updatedAt)}
+                        </p>
+                    ` : ''}
+                </div>
+                <div class="prose max-w-none">
+                    ${renderMarkdown(post.content)}
+                </div>
+            `;
+            
+            showPage('postDetail');
+        }
+
+        function editPost(postId) {
+            const post = posts.find(p => p.id === postId);
+            if (!post || !currentUser || currentUser.id !== post.authorId) return;
+            
+            document.getElementById('postFormTitle').innerHTML = '<i class="fas fa-edit text-emerald-600 mr-2"></i> Edit Post';
+            document.getElementById('postTitle').value = post.title;
+            document.getElementById('postContent').value = post.content;
+            document.getElementById('editPostId').value = post.id;
+            
+            showPage('createPost');
+        }
+
+        function handlePostSubmit(event) {
+            event.preventDefault();
+            
+            const title = document.getElementById('postTitle').value.trim();
+            const content = document.getElementById('postContent').value.trim();
+            const editId = document.getElementById('editPostId').value;
+            
+            if (!currentUser) {
+                showFlashMessage('You must be logged in to create posts', 'error');
+                showPage('login');
+                return;
+            }
+            
+            if (editId) {
+                // Update existing post
+                const postIndex = posts.findIndex(p => p.id === parseInt(editId));
+                if (postIndex !== -1 && posts[postIndex].authorId === currentUser.id) {
+                    posts[postIndex].title = title;
+                    posts[postIndex].content = content;
+                    posts[postIndex].updatedAt = new Date().toISOString();
+                    showFlashMessage('Post updated successfully!');
+                }
+            } else {
+                // Create new post
+                const newPost = {
+                    id: posts.length > 0 ? Math.max(...posts.map(p => p.id)) + 1 : 1,
+                    title,
+                    content,
+                    authorId: currentUser.id,
+                    authorName: currentUser.username,
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                };
+                posts.push(newPost);
+                showFlashMessage('Post created successfully!');
+            }
+            
+            saveData();
+            document.getElementById('editPostId').value = '';
+            showPage('home');
+        }
+
+        function deletePost(postId) {
+            const post = posts.find(p => p.id === postId);
+            if (!post) return;
+            
+            if (!currentUser) {
+                showFlashMessage('You must be logged in', 'error');
+                showPage('login');
+                return;
+            }
+            
+            if (currentUser.id !== post.authorId) {
+                showFlashMessage('You can only delete your own posts', 'error');
+                return;
+            }
+            
+            deletePostId = postId;
+            document.getElementById('deleteModal').classList.remove('hidden');
+            document.getElementById('deleteModal').classList.add('flex');
+        }
+
+        function closeDeleteModal() {
+            document.getElementById('deleteModal').classList.add('hidden');
+            document.getElementById('deleteModal').classList.remove('flex');
+            deletePostId = null;
+        }
+
+        function confirmDelete() {
+            if (deletePostId) {
+                posts = posts.filter(p => p.id !== deletePostId);
+                saveData();
+                showFlashMessage('Post deleted successfully!');
+                closeDeleteModal();
+                showPage('home');
+            }
+        }
+
+        // ============================================
+        // INITIALIZATION
+        // ============================================
+        document.addEventListener('DOMContentLoaded', () => {
+            updateAuthNav();
+            renderPosts();
+            
+            // Close modal on outside click
+            document.getElementById('deleteModal').addEventListener('click', (e) => {
+                if (e.target === document.getElementById('deleteModal')) {
+                    closeDeleteModal();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
